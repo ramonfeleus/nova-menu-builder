@@ -32,9 +32,9 @@ class Menu extends Model
             'name' => $this->name,
             'slug' => $this->slug,
             'locale' => $locale,
-            'menuItems' => $this->rootMenuItems()
+            'menuItems' => $this->rootMenuItems
                 ->where('locale', $locale)
-                ->get()
+                ->values()
                 ->map(function ($menuItem) {
                     return $this->formatMenuItem($menuItem);
                 })

@@ -2,17 +2,21 @@
 
 namespace Outl1ne\MenuBuilder;
 
-use Illuminate\Http\Request;
 use Laravel\Nova\Nova;
 use Laravel\Nova\Tool;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use Laravel\Nova\Menu\MenuSection;
+use Outl1ne\MenuBuilder\Traits\Menuable;
 
 class MenuBuilder extends Tool
 {
+    use Menuable;
+
     public function boot()
     {
-        Nova::script('nova-menu', __DIR__ . '/../dist/entry.js');
+        Nova::script('nova-menu', __DIR__ . '/../dist/js/entry.js');
+        Nova::style('nova-menu', __DIR__ . '/../dist/css/entry.css');
 
         $menuBuilderUriKey = static::getMenuResource()::uriKey();
         Nova::provideToScript([
@@ -22,10 +26,14 @@ class MenuBuilder extends Tool
 
     public function menu(Request $request)
     {
+        if ($this->hideMenu) {
+            return null;
+        }
+
         // Outl1ne\MenuBuilder\MenuBuilder::getMenuResource()::authorizedToViewAny(request())
-        return MenuSection::make(__('novaMenuBuilder.sidebarTitle'))
+        return MenuSection::make($this->title ?: __('novaMenuBuilder.sidebarTitle'))
             ->path('/menus')
-            ->icon('adjustments');
+            ->icon($this->icon);
     }
 
     /** @noinspection PhpUnhandledExceptionInspection */
@@ -82,27 +90,6 @@ class MenuBuilder extends Tool
         }
 
         return $templateFields;
-    }
-
-    public static function getRulesFromMenuLinkable(?string $menuLinkableClass)
-    {
-        $menusTableName = MenuBuilder::getMenusTableName();
-
-        $menuItemRules = $menuLinkableClass ? $menuLinkableClass::getRules() : [];
-        $dataRules = [];
-        foreach ($menuItemRules as $key => $rule) {
-            if ($key !== 'value' && !Str::startsWith($key, 'data->')) $key = "data->{$key}";
-            $dataRules[$key] = $rule;
-        }
-
-        return array_merge([
-            'menu_id' => "required|exists:$menusTableName,id",
-            'name' => 'required|min:1',
-            'locale' => 'required',
-            'value' => 'present',
-            'class' => 'required',
-            'target' => 'required|in:_self,_blank'
-        ], $dataRules);
     }
 
 
